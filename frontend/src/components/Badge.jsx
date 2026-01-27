@@ -1,0 +1,20 @@
+import React from 'react';
+import { cn } from "../utils/utils";
+
+export function Badge({ variant = "default", className, ...props }) {
+    return (
+        <span
+            className={cn(
+                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                {
+                    "bg-primary-100 text-primary-800": variant === "default",
+                    "bg-green-100 text-green-800": variant === "success" || variant === "Active",
+                    "bg-yellow-100 text-yellow-800": variant === "warning" || variant === "Expiring Soon",
+                    "bg-red-100 text-red-800": variant === "destructive" || variant === "Expired",
+                },
+                className
+            )}
+            {...props}
+        />
+    );
+}

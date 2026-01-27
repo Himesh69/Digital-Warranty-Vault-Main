@@ -1,0 +1,224 @@
+.qr-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.qr-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.qr-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.qr-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #03045e;
+    font-weight: 600;
+}
+
+.qr-close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.qr-close-btn:hover {
+    background-color: #f3f4f6;
+    color: #03045e;
+}
+
+.qr-modal-body {
+    padding: 24px;
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+}
+
+.qr-code-image {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    border: 4px solid white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.qr-instruction {
+    text-align: center;
+    color: #6b7280;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+}
+
+.share-url-container {
+    margin-bottom: 20px;
+}
+
+.share-url-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.share-url-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #374151;
+    background-color: #f9fafb;
+}
+
+.share-url-input:focus {
+    outline: none;
+    border-color: #03045e;
+    background-color: white;
+}
+
+.copy-btn {
+    padding: 10px 20px;
+    background-color: #03045e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background-color: #020338;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(3, 4, 94, 0.2);
+}
+
+.qr-modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.download-btn {
+    padding: 10px 24px;
+    background-color: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.download-btn:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.2);
+}
+
+.close-btn {
+    padding: 10px 24px;
+    background-color: #e5e7eb;
+    color: #374151;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background-color: #d1d5db;
+}
+
+@media (max-width: 640px) {
+    .qr-modal-content {
+        width: 95%;
+    }
+    
+    .qr-modal-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .share-url-input-group {
+        flex-direction: column;
+    }
+    
+    .copy-btn {
+        width: 100%;
+    }
+    
+    .qr-modal-footer {
+        flex-direction: column;
+    }
+    
+    .download-btn,
+    .close-btn {
+        width: 100%;
+    }
+}
