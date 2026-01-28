@@ -1,9 +1,12 @@
 [phases.setup]
-nixPkgs = ["python311"]
+nixPkgs = ["python311", "pip"]
 aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "poppler-utils"]
 
 [phases.install]
-cmds = ["cd backend && pip install -r requirements.txt"]
+cmds = [
+    "cd backend && pip install --upgrade pip",
+    "cd backend && pip install -r requirements.txt"
+]
 
 [phases.build]
 cmds = [
@@ -12,4 +15,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && gunicorn warranty_vault.wsgi:application --bind 0.0.0.0:$PORT"
+cmd = "cd backend && gunicorn warranty_vault.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
