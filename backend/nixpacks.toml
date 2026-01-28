@@ -1,8 +1,12 @@
 [phases.setup]
+nixPkgs = ["python311", "pip"]
 aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "poppler-utils"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt"
+]
 
 [phases.build]
 cmds = [
