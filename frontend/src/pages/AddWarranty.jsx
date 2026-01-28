@@ -3,8 +3,7 @@ import Card from '../components/Card';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import FileUploadZone from '../components/FileUploadZone';
-import OCRProcessingIndicator from '../components/OCRProcessingIndicator';
-import { Upload, Sparkles, Edit3, FileSearch } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import warrantyService from '../services/warrantyService';
 
@@ -12,13 +11,7 @@ export default function AddWarranty() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    // OCR-related state
     const [uploadedFile, setUploadedFile] = useState(null);
-    const [ocrStatus, setOcrStatus] = useState('idle'); // idle, uploading, scanning, extracting, success, error
-    const [ocrResult, setOcrResult] = useState(null);
-    const [ocrError, setOcrError] = useState('');
-    const [useManualEntry, setUseManualEntry] = useState(false);
 
     const [formData, setFormData] = useState({
         productName: '',
@@ -55,74 +48,6 @@ export default function AddWarranty() {
 
     const handleFileSelect = (file) => {
         setUploadedFile(file);
-        setOcrStatus('idle');
-        setOcrResult(null);
-        setOcrError('');
-    };
-
-    const handleScanReceipt = async () => {
-        if (!uploadedFile) {
-            setError('Please select a file first');
-            return;
-        }
-
-        setError('');
-        setOcrError('');
-        setOcrStatus('uploading');
-
-        try {
-            // Simulate upload phase
-            await new Promise(resolve => setTimeout(resolve, 500));
-            setOcrStatus('scanning');
-
-            // Simulate scanning phase
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setOcrStatus('extracting');
-
-            // Call OCR API
-            const result = await warrantyService.scanReceipt(uploadedFile);
-
-            if (result.success) {
-                setOcrStatus('success');
-                setOcrResult(result);
-
-                // Pre-fill form with OCR data
-                setFormData({
-                    productName: result.data.product_name || '',
-                    brand: result.data.brand || '',
-                    purchaseDate: result.data.purchase_date || new Date().toISOString().split('T')[0],
-                    warrantyPeriod: result.data.warranty_period?.toString() || '12',
-                    warrantyPeriodUnit: result.data.warranty_period_unit || 'months',
-                    category: result.data.category || '',
-                    notes: formData.notes // Keep existing notes
-                });
-            } else {
-                setOcrStatus('error');
-                setOcrError(result.error || 'Failed to scan receipt');
-            }
-        } catch (err) {
-            console.error('OCR scan failed:', err);
-            setOcrStatus('error');
-            setOcrError(err.response?.data?.error || err.message || 'Failed to scan receipt. Please try again.');
-        }
-    };
-
-    const handleClearOCRData = () => {
-        setFormData({
-            productName: '',
-            brand: '',
-            purchaseDate: new Date().toISOString().split('T')[0],
-            warrantyPeriod: '12',
-            warrantyPeriodUnit: 'months',
-            category: '',
-            notes: formData.notes
-        });
-        setOcrResult(null);
-        setOcrStatus('idle');
-    };
-
-    const handleRetryOCR = () => {
-        handleScanReceipt();
     };
 
     const handleSubmit = async (e) => {
@@ -138,9 +63,9 @@ export default function AddWarranty() {
                 return;
             }
 
-            // Check if we have a receipt file from OCR
+            // Always use FormData if we have a file, otherwise use JSON
             let payload;
-            if (uploadedFile && ocrResult) {
+            if (uploadedFile) {
                 // Use FormData to send file with warranty data
                 const formDataPayload = new FormData();
                 formDataPayload.append('product_name', formData.productName);
@@ -154,7 +79,7 @@ export default function AddWarranty() {
 
                 payload = formDataPayload;
             } else {
-                // Regular JSON payload for manual entry
+                // Regular JSON payload for manual entry without file
                 payload = {
                     product_name: formData.productName,
                     brand: formData.brand,
@@ -190,10 +115,6 @@ export default function AddWarranty() {
         }
     };
 
-    const isFieldPreFilled = (fieldName) => {
-        return ocrResult && ocrResult.success && ocrResult.data[fieldName];
-    };
-
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
@@ -201,78 +122,11 @@ export default function AddWarranty() {
                 <p className="text-gray-500">Store a new product warranty in your digital vault.</p>
             </div>
 
-            {/* OCR Upload Section */}
-            {!useManualEntry && (
-                <Card>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5 text-primary-600" />
-                                    Scan Receipt (OCR)
-                                </h2>
-                                <p className="text-sm text-gray-500 mt-0.5">Upload a receipt to automatically extract warranty information</p>
-                            </div>
-                            <button
-                                onClick={() => setUseManualEntry(true)}
-                                className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2"
-                            >
-                                Manual Entry
-                            </button>
-                        </div>
-
-                        <FileUploadZone onFileSelect={handleFileSelect} />
-
-                        {uploadedFile && ocrStatus === 'idle' && (
-                            <Button
-                                onClick={handleScanReceipt}
-                                className="w-full"
-                                variant="outline"
-                            >
-                                <FileSearch className="h-4 w-4 mr-2" />
-                                Scan Receipt
-                            </Button>
-                        )}
-
-                        {ocrStatus !== 'idle' && (
-                            <OCRProcessingIndicator
-                                status={ocrStatus}
-                                confidence={ocrResult?.confidence || 0}
-                                extractedTextPreview={ocrResult?.extracted_text_preview || ''}
-                                error={ocrError}
-                                onRetry={handleRetryOCR}
-                            />
-                        )}
-                    </div>
-                </Card>
-            )}
-
             {/* Warranty Form */}
             <Card>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div>
                         <h2 className="text-lg font-semibold text-gray-900">Warranty Details</h2>
-                        {ocrResult && ocrResult.success && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-green-600 font-medium">✓ Pre-filled from OCR</span>
-                                <button
-                                    type="button"
-                                    onClick={handleClearOCRData}
-                                    className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2"
-                                >
-                                    Clear
-                                </button>
-                            </div>
-                        )}
-                        {useManualEntry && (
-                            <button
-                                type="button"
-                                onClick={() => setUseManualEntry(false)}
-                                className="text-sm text-primary-600 hover:text-primary-700 underline underline-offset-2"
-                            >
-                                Use OCR Scan
-                            </button>
-                        )}
                     </div>
 
                     {error && (
@@ -283,11 +137,8 @@ export default function AddWarranty() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">
                                 Product Name
-                                {isFieldPreFilled('product_name') && (
-                                    <span className="text-xs text-green-600 font-normal">✓ OCR</span>
-                                )}
                             </label>
                             <Input
                                 name="productName"
@@ -295,15 +146,11 @@ export default function AddWarranty() {
                                 value={formData.productName}
                                 onChange={handleChange}
                                 required
-                                className={isFieldPreFilled('product_name') ? 'border-green-300 bg-green-50/30' : ''}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">
                                 Brand / Manufacturer
-                                {isFieldPreFilled('brand') && (
-                                    <span className="text-xs text-green-600 font-normal">✓ OCR</span>
-                                )}
                             </label>
                             <Input
                                 name="brand"
@@ -311,16 +158,12 @@ export default function AddWarranty() {
                                 value={formData.brand}
                                 onChange={handleChange}
                                 required
-                                className={isFieldPreFilled('brand') ? 'border-green-300 bg-green-50/30' : ''}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">
                                 Purchase Date
-                                {isFieldPreFilled('purchase_date') && (
-                                    <span className="text-xs text-green-600 font-normal">✓ OCR</span>
-                                )}
                             </label>
                             <Input
                                 type="date"
@@ -329,15 +172,11 @@ export default function AddWarranty() {
                                 onChange={handleChange}
                                 max={new Date().toISOString().split('T')[0]}
                                 required
-                                className={isFieldPreFilled('purchase_date') ? 'border-green-300 bg-green-50/30' : ''}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">
                                 Warranty Period
-                                {isFieldPreFilled('warranty_period') && (
-                                    <span className="text-xs text-green-600 font-normal">✓ OCR</span>
-                                )}
                             </label>
                             <div className="flex gap-2 items-stretch">
                                 <Input
@@ -349,7 +188,6 @@ export default function AddWarranty() {
                                     min="1"
                                     autoComplete="off"
                                     required
-                                    className={isFieldPreFilled('warranty_period') ? 'border-green-300 bg-green-50/30' : ''}
                                 />
                                 <div className="flex rounded-lg border border-gray-300 bg-white shadow-sm flex-shrink-0">
                                     <button
@@ -379,16 +217,12 @@ export default function AddWarranty() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">
                             Category
-                            {isFieldPreFilled('category') && (
-                                <span className="text-xs text-green-600 font-normal">✓ OCR</span>
-                            )}
                         </label>
                         <select
                             name="category"
-                            className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${isFieldPreFilled('category') ? 'border-green-300 bg-green-50/30' : 'border-gray-300'
-                                }`}
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             onChange={handleChange}
                             value={formData.category}
                             required
@@ -401,6 +235,17 @@ export default function AddWarranty() {
                             <option value="Accessories">Accessories</option>
                             <option value="Other">Other</option>
                         </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Receipt / Warranty Document (Optional)</label>
+                        <FileUploadZone onFileSelect={handleFileSelect} />
+                        {uploadedFile && (
+                            <p className="text-sm text-green-600 flex items-center gap-2">
+                                <Upload className="h-4 w-4" />
+                                File selected: {uploadedFile.name}
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
