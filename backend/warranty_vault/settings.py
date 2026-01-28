@@ -181,8 +181,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Tesseract OCR Configuration (local development only)
 # Note: Tesseract is NOT available on Render free tier
 TESSERACT_CMD = config('TESSERACT_CMD', default='')
-if TESSERACT_CMD and os.path.exists(TESSERACT_CMD):
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+# OCR feature disabled - pytesseract removed
+# if TESSERACT_CMD and os.path.exists(TESSERACT_CMD):
+#     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 # Set Poppler path for PDF processing (local development only)
 POPPLER_PATH = config('POPPLER_PATH', default='')
