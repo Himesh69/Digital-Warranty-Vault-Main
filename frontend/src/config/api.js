@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Base API URL - use relative path to leverage Vite proxy
-const API_BASE_URL = '/api';
+// Base API URL - use environment variable in production, proxy in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
 const api = axios.create({

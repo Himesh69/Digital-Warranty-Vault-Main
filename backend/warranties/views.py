@@ -138,6 +138,36 @@ class WarrantyViewSet(viewsets.ModelViewSet):
             )
 
 
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def check_expiry_cron(request):
+    """
+    Endpoint for external cron services to trigger warranty expiry checks.
+    This allows scheduled tasks to run even on platforms without built-in cron support.
+    
+    For security, you can add API key authentication or IP whitelisting.
+    """
+    from django.core.management import call_command
+    
+    # Optional: Add API key authentication
+    # api_key = request.headers.get('X-API-Key')
+    # if api_key != settings.CRON_API_KEY:
+    #     return Response({'error': 'Unauthorized'}, status=401)
+    
+    try:
+        # Run the warranty expiry check command
+        call_command('check_warranty_expiry')
+        return Response({
+            'status': 'success',
+            'message': 'Warranty expiry check completed successfully'
+        })
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Failed to run expiry check: {str(e)}'
+        }, status=500)
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])  # No authentication required
 def public_warranty_view(request, share_token):

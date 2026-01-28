@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 from django.conf import settings
 import os
 import tempfile
+import requests
+import base64
 
 
 class ReceiptOCRService:
@@ -35,17 +37,82 @@ class ReceiptOCRService:
     
     def __init__(self):
         """Initialize OCR service with Tesseract configuration."""
-        if hasattr(settings, 'TESSERACT_CMD'):
-            pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
+        self.tesseract_available = False
+        self.use_cloud_ocr = getattr(settings, 'USE_CLOUD_OCR', False)
+        self.ocr_api_key = getattr(settings, 'OCR_API_KEY', '')
+        
+        # Try to configure Tesseract
+        if hasattr(settings, 'TESSERACT_CMD') and settings.TESSERACT_CMD:
+            if os.path.exists(settings.TESSERACT_CMD):
+                pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
+                self.tesseract_available = True
+            else:
+                print(f"Warning: Tesseract not found at {settings.TESSERACT_CMD}")
+        
+        # If Tesseract not available and no cloud OCR configured, warn
+        if not self.tesseract_available and not (self.use_cloud_ocr and self.ocr_api_key):
+            print("Warning: Neither Tesseract nor Cloud OCR is configured. OCR functionality will be limited.")
+    
+    def extract_text_from_image_cloud(self, image_path):
+        """Extract text from an image using cloud OCR API (OCR.space)."""
+        try:
+            with open(image_path, 'rb') as f:
+                image_data = base64.b64encode(f.read()).decode()
+            
+            payload = {
+                'apikey': self.ocr_api_key,
+                'base64Image': f'data:image/png;base64,{image_data}',
+                'language': 'eng',
+                'isOverlayRequired': False,
+                'detectOrientation': True,
+                'scale': True,
+                'OCREngine': 2,
+            }
+            
+            response = requests.post(
+                'https://api.ocr.space/parse/image',
+                data=payload,
+                timeout=30
+            )
+            
+            result = response.json()
+            
+            if result.get('IsErroredOnProcessing'):
+                raise Exception(f"Cloud OCR error: {result.get('ErrorMessage', 'Unknown error')}")
+            
+            if result.get('ParsedResults'):
+                return result['ParsedResults'][0].get('ParsedText', '')
+            
+            raise Exception("No text extracted from image")
+            
+        except Exception as e:
+            raise Exception(f"Failed to extract text using cloud OCR: {str(e)}")
     
     def extract_text_from_image(self, image_path):
-        """Extract text from an image file using Tesseract OCR."""
+        """Extract text from an image file using Tesseract OCR or cloud OCR."""
         try:
-            image = Image.open(image_path)
-            # Preprocess image for better OCR results
-            image = image.convert('L')  # Convert to grayscale
-            text = pytesseract.image_to_string(image)
-            return text
+            # Try Tesseract first if available
+            if self.tesseract_available:
+                try:
+                    image = Image.open(image_path)
+                    # Preprocess image for better OCR results
+                    image = image.convert('L')  # Convert to grayscale
+                    text = pytesseract.image_to_string(image)
+                    return text
+                except Exception as tesseract_error:
+                    print(f"Tesseract OCR failed: {tesseract_error}")
+                    # Fall through to cloud OCR if available
+            
+            # Try cloud OCR if configured
+            if self.use_cloud_ocr and self.ocr_api_key:
+                return self.extract_text_from_image_cloud(image_path)
+            
+            # If neither is available, raise error
+            raise Exception(
+                "OCR is not configured. Please install Tesseract locally or configure cloud OCR API. "
+                "See OCR_SETUP_GUIDE.md for instructions."
+            )
+            
         except Exception as e:
             raise Exception(f"Failed to extract text from image: {str(e)}")
     

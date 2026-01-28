@@ -1,0 +1,11 @@
+[phases.setup]
+aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "poppler-utils"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["python manage.py collectstatic --no-input"]
+
+[start]
+cmd = "gunicorn warranty_vault.wsgi:application --bind 0.0.0.0:$PORT"

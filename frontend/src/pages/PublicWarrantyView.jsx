@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import './PublicWarrantyView.css';
 
 const PublicWarrantyView = () => {
@@ -16,7 +17,7 @@ const PublicWarrantyView = () => {
     const fetchWarranty = async () => {
         try {
             const response = await axios.get(
-                `http://localhost:8000/api/share/${shareToken}/`
+                `${API_BASE_URL}/share/${shareToken}/`
             );
             setWarranty(response.data);
         } catch (err) {

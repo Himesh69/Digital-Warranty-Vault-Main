@@ -31,10 +31,25 @@ export default function AddWarranty() {
     });
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        // Special handling for warranty period to ensure it's always a valid number
+        if (name === 'warrantyPeriod') {
+            // Only allow positive integers
+            const numValue = value.replace(/[^0-9]/g, '');
+            if (numValue === '' || parseInt(numValue, 10) > 0) {
+                setFormData({ ...formData, [name]: numValue });
+            }
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleUnitChange = (unit) => {
+        // Prevent any state updates if the unit is already selected
+        if (formData.warrantyPeriodUnit === unit) {
+            return;
+        }
         setFormData(prevData => ({ ...prevData, warrantyPeriodUnit: unit }));
     };
 
@@ -332,6 +347,7 @@ export default function AddWarranty() {
                                     value={formData.warrantyPeriod}
                                     onChange={handleChange}
                                     min="1"
+                                    autoComplete="off"
                                     required
                                     className={isFieldPreFilled('warranty_period') ? 'border-green-300 bg-green-50/30' : ''}
                                 />
@@ -340,8 +356,8 @@ export default function AddWarranty() {
                                         type="button"
                                         onClick={() => handleUnitChange('months')}
                                         className={`px-6 py-2 text-sm font-medium transition-all duration-200 min-w-[90px] rounded-l-lg ${formData.warrantyPeriodUnit === 'months'
-                                                ? 'bg-primary-600 text-white shadow-inner'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-primary-600 text-white shadow-inner'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         Months
@@ -351,8 +367,8 @@ export default function AddWarranty() {
                                         type="button"
                                         onClick={() => handleUnitChange('days')}
                                         className={`px-6 py-2 text-sm font-medium transition-all duration-200 min-w-[90px] rounded-r-lg ${formData.warrantyPeriodUnit === 'days'
-                                                ? 'bg-primary-600 text-white shadow-inner'
-                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-primary-600 text-white shadow-inner'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         Days

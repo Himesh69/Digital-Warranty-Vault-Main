@@ -1,0 +1,60 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: warranty-vault-db
+    plan: free
+    databaseName: warranty_vault
+    user: warranty_user
+
+  # Django Backend
+  - type: web
+    name: warranty-vault-backend
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "cd backend && gunicorn warranty_vault.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: DATABASE_URL
+        fromDatabase:
+          name: warranty-vault-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+
+  # Cron Job for Daily Warranty Checking
+  - type: cron
+    name: warranty-checker
+    runtime: python
+    plan: free
+    # Schedule: 9 AM IST = 3:30 AM UTC (adjust for your timezone)
+    schedule: "30 3 * * *"
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && python manage.py check_warranty_expiry"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        fromService:
+          name: warranty-vault-backend
+          type: web
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: warranty-vault-db
+          property: connectionString
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false

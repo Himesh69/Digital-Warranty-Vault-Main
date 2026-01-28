@@ -4,17 +4,34 @@ Django settings for warranty_vault project.
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from decouple import config, Csv
+import dj_database_url
+import pytesseract
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-your-secret-key-here-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['*']  # Allow all hosts for development and ngrok
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+
+# Railway-specific configuration
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    # Railway provides a dynamic domain
+    RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL', '')
+    if RAILWAY_STATIC_URL:
+        railway_domain = RAILWAY_STATIC_URL.replace('https://', '').replace('http://', '')
+        if railway_domain not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(railway_domain)
+    
+    # Also allow .railway.app domains
+    if '.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.railway.app')
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -64,16 +82,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'warranty_vault.wsgi.application'
 
 # Database - PostgreSQL
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'warranty_vault',
-        'USER': 'warranty_user',
-        'PASSWORD': '1234',
-        'HOST': 'localhost',
-        'PORT': '5432',
+# Use DATABASE_URL in production (Render), fallback to local config
+DATABASE_URL = config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    # Production: Use DATABASE_URL from environment
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    # Local development: Use individual settings
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='warranty_vault'),
+            'USER': config('DB_USER', default='warranty_user'),
+            'PASSWORD': config('DB_PASSWORD', default='1234'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -98,7 +126,11 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise configuration for production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -109,6 +141,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
+
+# Custom Authentication Backend for email-based auth
+AUTHENTICATION_BACKENDS = [
+    'users.authentication.EmailBackend',
+]
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -132,39 +169,29 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-# Allow all origins for development and ngrok sharing
-# ⚠️ In production, replace with specific allowed origins
-CORS_ALLOW_ALL_ORIGINS = True
-
-# Backup: Specific origins (commented out for now)
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://localhost:5174",
-#     "http://localhost:5175",
-#     "http://127.0.0.1:5173",
-#     "http://127.0.0.1:5174",
-#     "http://127.0.0.1:5175",
-#     # Add your ngrok URL here when you get it:
-#     # "https://your-ngrok-url.ngrok.io",
-# ]
+# In development, allow all origins; in production, specify allowed origins
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Tesseract OCR Configuration
-import pytesseract
-import os
-
-# Set Tesseract path (adjust if your installation path is different)
-TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-if os.path.exists(TESSERACT_CMD):
+# Tesseract OCR Configuration (local development only)
+# Note: Tesseract is NOT available on Render free tier
+TESSERACT_CMD = config('TESSERACT_CMD', default='')
+if TESSERACT_CMD and os.path.exists(TESSERACT_CMD):
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-# Set Poppler path for PDF processing
-POPPLER_PATH = r'C:\Program Files\poppler\Library\bin'
+# Set Poppler path for PDF processing (local development only)
+POPPLER_PATH = config('POPPLER_PATH', default='')
+
+# Cloud OCR Configuration (for production deployment)
+USE_CLOUD_OCR = config('USE_CLOUD_OCR', default=False, cast=bool)
+OCR_API_KEY = config('OCR_API_KEY', default='')
 
 # Email Configuration
-import os
-from decouple import config, Csv
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
