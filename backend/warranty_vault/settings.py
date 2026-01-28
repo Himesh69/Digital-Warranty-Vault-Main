@@ -7,7 +7,7 @@ from datetime import timedelta
 import os
 from decouple import config, Csv
 import dj_database_url
-import pytesseract
+# import pytesseract  # Removed - OCR feature disabled
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
