@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python311", "pip"]
+nixPkgs = ["python311"]
 aptPkgs = ["tesseract-ocr", "tesseract-ocr-eng", "poppler-utils"]
 
 [phases.install]
